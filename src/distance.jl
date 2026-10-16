@@ -6,13 +6,6 @@ Hubble distance `c / H₀` in Mpc.
 hubble_distance(c::AbstractCosmology) = SPEED_OF_LIGHT_KM_S / H0(c)
 
 """
-    hubble_distance(c, z) -> Real
-
-Hubble distance at redshift `z`, `c / H(z)`, in Mpc.
-"""
-hubble_distance(c::AbstractCosmology, z::Real) = hubble_distance(c) / E(c, z)
-
-"""
     comoving_radial_distance(c, z) -> Real
 
 Line-of-sight comoving distance `d_c(z) = (c/H₀) ∫₀ᶻ dz′/E(z′)` in Mpc. The integral is

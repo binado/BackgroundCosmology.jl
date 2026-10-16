@@ -20,7 +20,6 @@ end
 
     # d_h = c / H0 in Mpc (speed of light in km/s over H0 in km/s/Mpc).
     @test hubble_distance(c) ≈ 299792.458 / 67.0
-    @test hubble_distance(c, 1.0) ≈ 299792.458 / hubble_parameter(c, 1.0)
 
     z = [0.0, 0.1, 0.2]
     d_l = luminosity_distance.(c, z)
