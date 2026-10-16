@@ -1,12 +1,12 @@
 """
-    hubble_distance(c) -> Real
+    hubble_distance(c) -> Number
 
 Hubble distance `c / H₀` in Mpc.
 """
 hubble_distance(c::AbstractCosmology) = SPEED_OF_LIGHT_KM_S / H0(c)
 
 """
-    comoving_radial_distance(c, z) -> Real
+    comoving_radial_distance(c, z) -> Number
 
 Line-of-sight comoving distance `d_c(z) = (c/H₀) ∫₀ᶻ dz′/E(z′)` in Mpc. The integral is
 evaluated by `method` (see [`integrate`](@ref)) over `[0, z]`; the default is one fixed
@@ -15,68 +15,67 @@ evaluated by `method` (see [`integrate`](@ref)) over `[0, z]`; the default is on
 All the distance and volume functions below forward `method` to this integral.
 """
 function comoving_radial_distance(
-        c::AbstractCosmology, z::Real; method = _SCALAR_RULE
+        c::AbstractCosmology, z::Number; method = _SCALAR_RULE
     )
     d_h = hubble_distance(c)
-    iszero(z) && return zero(d_h * z * inv(E(c, z)))
     integral = integrate(x -> inv(E(c, x)), zero(z), z, method)
     return d_h * integral
 end
 
 """
-    comoving_transverse_distance(c, z) -> Real
+    comoving_transverse_distance(c, z) -> Number
 
 Transverse comoving distance in Mpc. The models are flat, so this is
 [`comoving_radial_distance`](@ref).
 """
-function comoving_transverse_distance(c::AbstractCosmology, z::Real; kwargs...)
+function comoving_transverse_distance(c::AbstractCosmology, z::Number; kwargs...)
     return comoving_radial_distance(c, z; kwargs...)
 end
 
 """
-    angular_diameter_distance(c, z) -> Real
+    angular_diameter_distance(c, z) -> Number
 
 Angular-diameter distance `d_c / (1 + z)` in Mpc.
 """
-function angular_diameter_distance(c::AbstractCosmology, z::Real; kwargs...)
+function angular_diameter_distance(c::AbstractCosmology, z::Number; kwargs...)
     return comoving_transverse_distance(c, z; kwargs...) / (1 + z)
 end
 
 """
-    luminosity_distance(c, z) -> Real
+    luminosity_distance(c, z) -> Number
 
 Luminosity distance `(1 + z) d_c` in Mpc.
 """
-function luminosity_distance(c::AbstractCosmology, z::Real; kwargs...)
+function luminosity_distance(c::AbstractCosmology, z::Number; kwargs...)
     return (1 + z) * comoving_transverse_distance(c, z; kwargs...)
 end
 
 """
-    distmod(c, z) -> Real
+    distmod(c, z) -> Number
 
 Distance modulus `5 log₁₀(d_L / Mpc) + 25`.
 """
-function distmod(c::AbstractCosmology, z::Real; kwargs...)
+function distmod(c::AbstractCosmology, z::Number; kwargs...)
     return 5 * log10(luminosity_distance(c, z; kwargs...)) + 25
 end
 
 """
-    comoving_volume(c, z) -> Real
+    comoving_volume(c, z) -> Number
 
 Full-sky comoving volume `4π d_c³ / 3` out to redshift `z`, in Mpc³.
 """
-function comoving_volume(c::AbstractCosmology, z::Real; kwargs...)
+function comoving_volume(c::AbstractCosmology, z::Number; kwargs...)
     return 4π / 3 * comoving_transverse_distance(c, z; kwargs...)^3
 end
 
 """
-    comoving_volume_element(c, z) -> Real
+    comoving_volume_element(c, z) -> Number
 
 Comoving volume element **per steradian**, `dV_c/dz/dΩ = (c/H₀) d_c² / E(z)`, in
 Mpc³ sr⁻¹ (same convention as Cosmology.jl). Multiply by `4π` for the all-sky value, which
 is what [`distance_and_volume_grid`](@ref) tabulates.
 """
-function comoving_volume_element(c::AbstractCosmology, z::Real; kwargs...)
+function comoving_volume_element(c::AbstractCosmology, z::Number; kwargs...)
     return hubble_distance(c) * comoving_transverse_distance(c, z; kwargs...)^2 / E(c, z)
 end
 
@@ -101,39 +100,23 @@ and any interpolation policy belong to the caller.
 
 Takes the grid **array**, not `(z_min, z_max, n)`, so the caller's grid is the grid used
 — there is no way for tabulation and interpolation to disagree about nodes. The grid must
-be non-negative and strictly increasing, with at least one node (astrogwb's contract): a
+be non-negative and strictly increasing, with at least one node (astrogwb's contract).
+The caller is responsible for these preconditions; the grid is not validated. A
 grid that does not start at zero is fine, because the cumulative comoving-distance
-integral always starts from the internally prepended `d_c(0) = 0`.
+integral always starts from the internally prepended `d_c(0) = 0`. Prefix sums may
+reassociate additions, so results agree to rounding error rather than bit for bit.
 """
 function distance_and_volume_grid(
-        c::AbstractCosmology, z::AbstractVector{<:Real}; method = _GRID_RULE
-    )
-    length(z) >= 1 || throw(
-        ArgumentError(
-            "distance_and_volume_grid requires at least one grid point"
-        )
-    )
-    all(>=(0), z) || throw(
-        ArgumentError(
-            "distance_and_volume_grid requires a non-negative grid"
-        )
-    )
-    all(>(0), diff(z)) || throw(
-        ArgumentError(
-            "distance_and_volume_grid requires a strictly increasing grid"
-        )
+        c::AbstractCosmology, z::AbstractVector{<:Number}; method = _GRID_RULE
     )
     inv_E = inv.(E.(c, z))
-    # Cumulative ∫₀^z 1/E over each interval [z_{i-1}, z_i] (z_{-1} = 0 prepended),
-    # accumulated left to right so the summation order matches astrogwb's `cumsum`.
-    integral = similar(inv_E)
-    acc = zero(eltype(integral))
-    z_prev = zero(eltype(z))
-    @inbounds for (i, z_i) in enumerate(z)
-        acc += integrate(x -> inv(E(c, x)), z_prev, z_i, method)
-        integral[i] = acc
-        z_prev = z_i
-    end
+    # ∫₀^z 1/E: broadcast the scalar quadrature over intervals, then prefix-sum.
+    # Keeping the quadrature behind `integrate` also supports caller-defined methods.
+    lo = vcat(zero.(z[1:1]), z[1:(end - 1)])
+    intervals = ((a, b) -> integrate(x -> inv(E(c, x)), a, b, method)).(lo, z)
+    # Materialize numeric-wrapper arrays before the scan, including a host grid
+    # with traced cosmology parameters (whose intervals can be a Vector of wrappers).
+    integral = cumsum(identity.(intervals))
     d_h = hubble_distance(c)
     d_c = d_h .* integral
     return (;

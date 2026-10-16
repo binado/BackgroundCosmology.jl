@@ -19,3 +19,7 @@ fmt-check:
 # Run the test suite on Julia 1.12 (the supported version).
 test:
     julia +1.12 --project -e 'using Pkg; Pkg.test()'
+
+# Opt-in Reactant CPU tests in their own environment.
+test-reactant:
+    julia +1.12 --startup-file=no --project=test/reactant -e 'using Pkg; Pkg.instantiate(); include("test/reactant/runtests.jl")'
