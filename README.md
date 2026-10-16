@@ -7,9 +7,10 @@ Flat FLRW background cosmology for gravitational-wave population work, with a
 `H0` is in km/s/Mpc, distances in Mpc, times in Gyr. Supports flat ΛCDM, wCDM and w0waCDM
 (no radiation, no curvature).
 
-All integrals use fixed-order Gauss–Legendre rules (FastGaussQuadrature), never adaptive
-quadrature, so [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl) duals propagate
-through every call. Results match the Python `astrogwb` stack to rounding error.
+By default all integrals use fixed-order Gauss–Legendre rules (FastGaussQuadrature), never
+adaptive quadrature, so [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl) duals
+propagate through every call; see [Choosing the quadrature method](#choosing-the-quadrature-method)
+to change that. Results match the Python `astrogwb` stack to rounding error.
 
 ## Installation
 
@@ -56,3 +57,31 @@ just install-runic   # once
 just fmt             # format with Runic
 just test            # Pkg.test() on Julia 1.12
 ```
+
+## Choosing the quadrature method
+
+Every integrating function (`comoving_radial_dist` and everything built on it,
+`distance_and_volume_grid`, `age`, `lookback_time`) takes a `method` keyword that is
+handed to `integrate(f, lo, hi, method)`. The change of variables and the grid structure
+stay inside the package; `method` only integrates a smooth 1-D function.
+
+```julia
+using BackgroundCosmology
+using BackgroundCosmology: GaussLegendreRule
+
+luminosity_dist(c, 2.0; method = GaussLegendreRule(80))  # higher-order fixed rule
+
+using Integrals                                           # activates the extension
+luminosity_dist(c, 2.0; method = QuadGKJL())              # any SciML 1-D algorithm
+luminosity_dist(c, 2.0; method = (QuadGKJL(), (; reltol = 1e-12)))  # with tolerances
+age(c; method = Integrals.GaussLegendre(; n = 100))
+
+# your own rule: add a method for your type
+struct MyRule end
+BackgroundCosmology.integrate(f, lo, hi, ::MyRule) = ...
+```
+
+The defaults are fixed rules (40 nodes for `d_c`, 64 for `age`, 4 per interval on a grid)
+that are accurate to ~1e-12. Adaptive algorithms from Integrals.jl use their own, looser
+default tolerances, so pass `reltol` if you need parity. Integrals.jl is an optional
+dependency; `Integrals.GaussLegendre` runs on the same kernel with no overhead.

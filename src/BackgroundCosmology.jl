@@ -11,7 +11,10 @@ export AbstractCosmology, FlatLCDM, FlatWCDM, FlatW0WaCDM,
     comoving_volume, comoving_volume_element,
     age, lookback_time,
     hubble_constant_si,
-    distance_and_volume_grid
+    distance_and_volume_grid,
+    integrate
+
+public GaussLegendreRule
 
 include("conversion.jl")
 include("model.jl")
