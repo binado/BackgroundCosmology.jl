@@ -75,7 +75,7 @@ end
     @test comoving_volume(c, 2.0; method = m) == 4π / 3 * d^3
     @test distmod(c, 2.0; method = m) == 5 * log10(3d) + 25
     @test comoving_volume_element(c, 2.0; method = m) ==
-        hubble_distance0(c) * d^2 / E(c, 2.0)
+        hubble_distance(c) * d^2 / E(c, 2.0)
     # `age`'s integrand is a removable 0·∞ at √a = 0, so it needs an open rule.
     r = GaussLegendreRule(3)
     @test lookback_time(c, 1.5; method = r) == age(c, 0; method = r) - age(c, 1.5; method = r)

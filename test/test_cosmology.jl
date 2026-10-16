@@ -14,13 +14,13 @@ end
     @test Ωm(c) == 0.315
 
     @test E(c, 0.0) ≈ 1.0
-    @test H(c, 0.0) ≈ 67.0
-    @test H(c, 1.0) ≈ 67.0 * E(c, 1.0)
+    @test hubble_parameter(c, 0.0) ≈ 67.0
+    @test hubble_parameter(c, 1.0) ≈ 67.0 * E(c, 1.0)
     @test comoving_radial_distance(c, 0.0) ≈ 0.0
 
     # d_h = c / H0 in Mpc (speed of light in km/s over H0 in km/s/Mpc).
-    @test hubble_distance0(c) ≈ 299792.458 / 67.0
-    @test hubble_distance(c, 1.0) ≈ 299792.458 / H(c, 1.0)
+    @test hubble_distance(c) ≈ 299792.458 / 67.0
+    @test hubble_distance(c, 1.0) ≈ 299792.458 / hubble_parameter(c, 1.0)
 
     z = [0.0, 0.1, 0.2]
     d_l = luminosity_distance.(c, z)
@@ -41,7 +41,7 @@ end
             @test luminosity_distance(c, z) ≈ (1 + z)^2 * angular_diameter_distance(c, z)
             @test distmod(c, z) ≈ 5 * log10(luminosity_distance(c, z)) + 25
             @test comoving_volume(c, z) ≈ 4π / 3 * d_c^3
-            @test comoving_volume_element(c, z) ≈ hubble_distance0(c) * d_c^2 / E(c, z)
+            @test comoving_volume_element(c, z) ≈ hubble_distance(c) * d_c^2 / E(c, z)
         end
     end
 
@@ -157,7 +157,7 @@ end
         )
         for z in (0.1, 1.0, 2.5, 10.0, 20.0)
             reference, _ = quadgk(x -> inv(E(c, x)), 0.0, z; rtol = 1.0e-13)
-            @test comoving_radial_distance(c, z) ≈ hubble_distance0(c) * reference rtol = 1.0e-12
+            @test comoving_radial_distance(c, z) ≈ hubble_distance(c) * reference rtol = 1.0e-12
         end
     end
 end

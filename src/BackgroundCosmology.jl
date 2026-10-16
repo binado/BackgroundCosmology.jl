@@ -4,8 +4,8 @@ using FastGaussQuadrature: gausslegendre
 
 export AbstractCosmology, FlatLCDM, FlatWCDM, FlatW0WaCDM,
     cosmology,
-    H0, Ωm, E, H, w,
-    hubble_distance0, hubble_distance,
+    H0, Ωm, E, hubble_parameter, w,
+    hubble_distance,
     comoving_radial_distance, comoving_transverse_distance,
     angular_diameter_distance, luminosity_distance, distmod,
     comoving_volume, comoving_volume_element,
