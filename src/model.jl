@@ -117,8 +117,8 @@ function E(c::AbstractCosmology, z::Real)
 end
 
 """
-    H(c::AbstractCosmology, z) -> Real
+    hubble_parameter(c::AbstractCosmology, z) -> Real
 
 Hubble parameter `H(z)` in km/s/Mpc.
 """
-H(c::AbstractCosmology, z::Real) = H0(c) * E(c, z)
+hubble_parameter(c::AbstractCosmology, z::Real) = H0(c) * E(c, z)

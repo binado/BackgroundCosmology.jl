@@ -1,19 +1,12 @@
 """
-    hubble_dist0(c) -> Real
+    hubble_distance(c) -> Real
 
 Hubble distance `c / H₀` in Mpc.
 """
-hubble_dist0(c::AbstractCosmology) = SPEED_OF_LIGHT_KM_S / H0(c)
+hubble_distance(c::AbstractCosmology) = SPEED_OF_LIGHT_KM_S / H0(c)
 
 """
-    hubble_dist(c, z) -> Real
-
-Hubble distance at redshift `z`, `c / H(z)`, in Mpc.
-"""
-hubble_dist(c::AbstractCosmology, z::Real) = hubble_dist0(c) / E(c, z)
-
-"""
-    comoving_radial_dist(c, z) -> Real
+    comoving_radial_distance(c, z) -> Real
 
 Line-of-sight comoving distance `d_c(z) = (c/H₀) ∫₀ᶻ dz′/E(z′)` in Mpc. The integral is
 evaluated by `method` (see [`integrate`](@ref)) over `[0, z]`; the default is one fixed
@@ -21,41 +14,41 @@ evaluated by `method` (see [`integrate`](@ref)) over `[0, z]`; the default is on
 
 All the distance and volume functions below forward `method` to this integral.
 """
-function comoving_radial_dist(
+function comoving_radial_distance(
         c::AbstractCosmology, z::Real; method = _SCALAR_RULE
     )
-    d_h = hubble_dist0(c)
+    d_h = hubble_distance(c)
     iszero(z) && return zero(d_h * z * inv(E(c, z)))
     integral = integrate(x -> inv(E(c, x)), zero(z), z, method)
     return d_h * integral
 end
 
 """
-    comoving_transverse_dist(c, z) -> Real
+    comoving_transverse_distance(c, z) -> Real
 
 Transverse comoving distance in Mpc. The models are flat, so this is
-[`comoving_radial_dist`](@ref).
+[`comoving_radial_distance`](@ref).
 """
-function comoving_transverse_dist(c::AbstractCosmology, z::Real; kwargs...)
-    return comoving_radial_dist(c, z; kwargs...)
+function comoving_transverse_distance(c::AbstractCosmology, z::Real; kwargs...)
+    return comoving_radial_distance(c, z; kwargs...)
 end
 
 """
-    angular_diameter_dist(c, z) -> Real
+    angular_diameter_distance(c, z) -> Real
 
 Angular-diameter distance `d_c / (1 + z)` in Mpc.
 """
-function angular_diameter_dist(c::AbstractCosmology, z::Real; kwargs...)
-    return comoving_transverse_dist(c, z; kwargs...) / (1 + z)
+function angular_diameter_distance(c::AbstractCosmology, z::Real; kwargs...)
+    return comoving_transverse_distance(c, z; kwargs...) / (1 + z)
 end
 
 """
-    luminosity_dist(c, z) -> Real
+    luminosity_distance(c, z) -> Real
 
 Luminosity distance `(1 + z) d_c` in Mpc.
 """
-function luminosity_dist(c::AbstractCosmology, z::Real; kwargs...)
-    return (1 + z) * comoving_transverse_dist(c, z; kwargs...)
+function luminosity_distance(c::AbstractCosmology, z::Real; kwargs...)
+    return (1 + z) * comoving_transverse_distance(c, z; kwargs...)
 end
 
 """
@@ -64,7 +57,7 @@ end
 Distance modulus `5 log₁₀(d_L / Mpc) + 25`.
 """
 function distmod(c::AbstractCosmology, z::Real; kwargs...)
-    return 5 * log10(luminosity_dist(c, z; kwargs...)) + 25
+    return 5 * log10(luminosity_distance(c, z; kwargs...)) + 25
 end
 
 """
@@ -73,7 +66,7 @@ end
 Full-sky comoving volume `4π d_c³ / 3` out to redshift `z`, in Mpc³.
 """
 function comoving_volume(c::AbstractCosmology, z::Real; kwargs...)
-    return 4π / 3 * comoving_transverse_dist(c, z; kwargs...)^3
+    return 4π / 3 * comoving_transverse_distance(c, z; kwargs...)^3
 end
 
 """
@@ -84,7 +77,7 @@ Mpc³ sr⁻¹ (same convention as Cosmology.jl). Multiply by `4π` for the all-s
 is what [`distance_and_volume_grid`](@ref) tabulates.
 """
 function comoving_volume_element(c::AbstractCosmology, z::Real; kwargs...)
-    return hubble_dist0(c) * comoving_transverse_dist(c, z; kwargs...)^2 / E(c, z)
+    return hubble_distance(c) * comoving_transverse_distance(c, z; kwargs...)^2 / E(c, z)
 end
 
 """
@@ -141,7 +134,7 @@ function distance_and_volume_grid(
         integral[i] = acc
         z_prev = z_i
     end
-    d_h = hubble_dist0(c)
+    d_h = hubble_distance(c)
     d_c = d_h .* integral
     return (;
         comoving_distance = d_c,

@@ -14,16 +14,15 @@ end
     @test Ωm(c) == 0.315
 
     @test E(c, 0.0) ≈ 1.0
-    @test H(c, 0.0) ≈ 67.0
-    @test H(c, 1.0) ≈ 67.0 * E(c, 1.0)
-    @test comoving_radial_dist(c, 0.0) ≈ 0.0
+    @test hubble_parameter(c, 0.0) ≈ 67.0
+    @test hubble_parameter(c, 1.0) ≈ 67.0 * E(c, 1.0)
+    @test comoving_radial_distance(c, 0.0) ≈ 0.0
 
     # d_h = c / H0 in Mpc (speed of light in km/s over H0 in km/s/Mpc).
-    @test hubble_dist0(c) ≈ 299792.458 / 67.0
-    @test hubble_dist(c, 1.0) ≈ 299792.458 / H(c, 1.0)
+    @test hubble_distance(c) ≈ 299792.458 / 67.0
 
     z = [0.0, 0.1, 0.2]
-    d_l = luminosity_dist.(c, z)
+    d_l = luminosity_distance.(c, z)
     @test d_l[1] ≈ 0.0
     @test d_l[3] > d_l[2] > d_l[1]
 end
@@ -34,20 +33,20 @@ end
             FlatW0WaCDM(67.0, 0.315, -0.9, 0.2),
         )
         for z in (0.1, 1.0, 3.0)
-            d_c = comoving_radial_dist(c, z)
-            @test comoving_transverse_dist(c, z) == d_c
-            @test luminosity_dist(c, z) ≈ (1 + z) * d_c
-            @test angular_diameter_dist(c, z) ≈ d_c / (1 + z)
-            @test luminosity_dist(c, z) ≈ (1 + z)^2 * angular_diameter_dist(c, z)
-            @test distmod(c, z) ≈ 5 * log10(luminosity_dist(c, z)) + 25
+            d_c = comoving_radial_distance(c, z)
+            @test comoving_transverse_distance(c, z) == d_c
+            @test luminosity_distance(c, z) ≈ (1 + z) * d_c
+            @test angular_diameter_distance(c, z) ≈ d_c / (1 + z)
+            @test luminosity_distance(c, z) ≈ (1 + z)^2 * angular_diameter_distance(c, z)
+            @test distmod(c, z) ≈ 5 * log10(luminosity_distance(c, z)) + 25
             @test comoving_volume(c, z) ≈ 4π / 3 * d_c^3
-            @test comoving_volume_element(c, z) ≈ hubble_dist0(c) * d_c^2 / E(c, z)
+            @test comoving_volume_element(c, z) ≈ hubble_distance(c) * d_c^2 / E(c, z)
         end
     end
 
     # Hand-checkable low-redshift limit: d_c ≈ c z / H0 · (1 - (1 + q0) z / 2 ...).
     c = FlatLCDM(70.0, 0.3)
-    @test luminosity_dist(c, 1.0e-4) ≈ 299792.458 / 70.0 * 1.0e-4 rtol = 1.0e-3
+    @test luminosity_distance(c, 1.0e-4) ≈ 299792.458 / 70.0 * 1.0e-4 rtol = 1.0e-3
 
     # The volume element is the derivative of the volume out to z, per steradian.
     c = FlatLCDM(67.0, 0.315)
@@ -111,18 +110,18 @@ end
     end
 end
 
-@testset "comoving_radial_dist preserves AD tags at z=0" begin
+@testset "comoving_radial_distance preserves AD tags at z=0" begin
     c_w0 = FlatWCDM(67.0, ForwardDiff.Dual(0.315), -0.9)
-    @test comoving_radial_dist(c_w0, 0.0) ≈ 0.0
-    @test comoving_radial_dist(c_w0, 0.0) isa ForwardDiff.Dual
+    @test comoving_radial_distance(c_w0, 0.0) ≈ 0.0
+    @test comoving_radial_distance(c_w0, 0.0) isa ForwardDiff.Dual
 
     zs = [0.0, 0.1]
-    r = comoving_radial_dist.(c_w0, zs)
+    r = comoving_radial_distance.(c_w0, zs)
     @test all(x -> x isa ForwardDiff.Dual, r)
 
     c_wa = FlatW0WaCDM(67.0, 0.315, -0.9, ForwardDiff.Dual(0.2))
-    @test comoving_radial_dist(c_wa, 0.0) ≈ 0.0
-    @test comoving_radial_dist(c_wa, 0.0) isa ForwardDiff.Dual
+    @test comoving_radial_distance(c_wa, 0.0) ≈ 0.0
+    @test comoving_radial_distance(c_wa, 0.0) isa ForwardDiff.Dual
 end
 
 @testset "w preserves ForwardDiff derivatives" begin
@@ -157,7 +156,7 @@ end
         )
         for z in (0.1, 1.0, 2.5, 10.0, 20.0)
             reference, _ = quadgk(x -> inv(E(c, x)), 0.0, z; rtol = 1.0e-13)
-            @test comoving_radial_dist(c, z) ≈ hubble_dist0(c) * reference rtol = 1.0e-12
+            @test comoving_radial_distance(c, z) ≈ hubble_distance(c) * reference rtol = 1.0e-12
         end
     end
 end
@@ -171,8 +170,8 @@ end
             FlatW0WaCDM(67.0, 0.315, -0.9, 0.2),
         )
         g = distance_and_volume_grid(c, z_grid)
-        @test g.comoving_distance ≈ comoving_radial_dist.(c, z_grid) rtol = 1.0e-12
-        @test g.luminosity_distance ≈ luminosity_dist.(c, z_grid) rtol = 1.0e-12
+        @test g.comoving_distance ≈ comoving_radial_distance.(c, z_grid) rtol = 1.0e-12
+        @test g.luminosity_distance ≈ luminosity_distance.(c, z_grid) rtol = 1.0e-12
         # The grid's volume is all-sky: 4π × the per-steradian element.
         @test g.differential_comoving_volume ≈
             4π .* comoving_volume_element.(c, z_grid) rtol = 1.0e-12
@@ -196,7 +195,7 @@ end
     # coarse — validity is not accuracy, and the grid policy is caller-owned.)
     z_fine = collect(LinRange(0.5, 20.0, 1024))
     g_fine = distance_and_volume_grid(c, z_fine)
-    @test g_fine.comoving_distance ≈ comoving_radial_dist.(c, z_fine) rtol = 1.0e-8
+    @test g_fine.comoving_distance ≈ comoving_radial_distance.(c, z_fine) rtol = 1.0e-8
 
     # A single node is valid: one 4-node rule over [0, z]. Structurally sound, but
     # one wide interval is not an accurate composite rule — caller-owned policy.
@@ -224,7 +223,7 @@ end
 
     # And through the scalar path.
     for (build, x0) in builders
-        f_scalar = v -> luminosity_dist(build(v), 1.5)
+        f_scalar = v -> luminosity_distance(build(v), 1.5)
         d = ForwardDiff.derivative(f_scalar, x0)
         @test isfinite(d)
         @test d != 0.0

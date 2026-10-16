@@ -29,8 +29,8 @@ c = cosmology(; H0 = 67.0, Ωm = 0.315, w0 = -0.9)  # FlatWCDM
 c = cosmology(; H0 = 67.0, Ωm = 0.315, w0 = -0.9, wa = 0.2)  # FlatW0WaCDM
 
 E(c, 1.0)                        # H(z) / H₀
-luminosity_dist(c, 1.0)          # Mpc
-comoving_radial_dist(c, 1.0)     # Mpc
+luminosity_distance(c, 1.0)          # Mpc
+comoving_radial_distance(c, 1.0)     # Mpc
 comoving_volume_element(c, 1.0)  # Mpc³ per steradian per unit redshift
 age(c), lookback_time(c, 1.0)    # Gyr
 
@@ -60,7 +60,7 @@ just test            # Pkg.test() on Julia 1.12
 
 ## Choosing the quadrature method
 
-Every integrating function (`comoving_radial_dist` and everything built on it,
+Every integrating function (`comoving_radial_distance` and everything built on it,
 `distance_and_volume_grid`, `age`, `lookback_time`) takes a `method` keyword that is
 handed to `integrate(f, lo, hi, method)`. The change of variables and the grid structure
 stay inside the package; `method` only integrates a smooth 1-D function.
@@ -69,11 +69,11 @@ stay inside the package; `method` only integrates a smooth 1-D function.
 using BackgroundCosmology
 using BackgroundCosmology: GaussLegendreRule
 
-luminosity_dist(c, 2.0; method = GaussLegendreRule(80))  # higher-order fixed rule
+luminosity_distance(c, 2.0; method = GaussLegendreRule(80))  # higher-order fixed rule
 
 using Integrals                                           # activates the extension
-luminosity_dist(c, 2.0; method = QuadGKJL())              # any SciML 1-D algorithm
-luminosity_dist(c, 2.0; method = (QuadGKJL(), (; reltol = 1e-12)))  # with tolerances
+luminosity_distance(c, 2.0; method = QuadGKJL())              # any SciML 1-D algorithm
+luminosity_distance(c, 2.0; method = (QuadGKJL(), (; reltol = 1e-12)))  # with tolerances
 age(c; method = Integrals.GaussLegendre(; n = 100))
 
 # your own rule: add a method for your type

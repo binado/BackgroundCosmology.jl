@@ -41,16 +41,16 @@ end
 @testset "methods agree with the default" begin
     zs = (0.1, 1.0, 5.0, 20.0)
     for c in COSMOLOGIES, z in zs
-        d0 = comoving_radial_dist(c, z)
-        @test comoving_radial_dist(c, z; method = GaussLegendreRule(80)) ≈ d0 rtol = 1.0e-12
-        @test comoving_radial_dist(c, z; method = (QuadGKJL(), TIGHT)) ≈ d0 rtol = 1.0e-11
-        @test comoving_radial_dist(c, z; method = Integrals.GaussLegendre(; n = 60)) ≈ d0 rtol =
+        d0 = comoving_radial_distance(c, z)
+        @test comoving_radial_distance(c, z; method = GaussLegendreRule(80)) ≈ d0 rtol = 1.0e-12
+        @test comoving_radial_distance(c, z; method = (QuadGKJL(), TIGHT)) ≈ d0 rtol = 1.0e-11
+        @test comoving_radial_distance(c, z; method = Integrals.GaussLegendre(; n = 60)) ≈ d0 rtol =
             1.0e-12
         # The composite Integrals rule goes through the same kernel.
-        @test comoving_radial_dist(
+        @test comoving_radial_distance(
             c, z; method = Integrals.GaussLegendre(; n = 20, subintervals = 8)
         ) ≈ d0 rtol = 1.0e-12
-        @test comoving_radial_dist(c, z; method = Trapezoid(4000)) ≈ d0 rtol = 1.0e-6
+        @test comoving_radial_distance(c, z; method = Trapezoid(4000)) ≈ d0 rtol = 1.0e-6
     end
     for c in COSMOLOGIES, z in (0.5, 2.0, 1000.0)
         @test age(c, z; method = GaussLegendreRule(100)) ≈ age(c, z) rtol = 1.0e-12
@@ -67,15 +67,15 @@ end
 @testset "wrappers forward `method`" begin
     c = COSMOLOGIES[2]
     m = Trapezoid(50) # deliberately crude, so the default can't pass by accident
-    d = comoving_radial_dist(c, 2.0; method = m)
-    @test d != comoving_radial_dist(c, 2.0)
-    @test comoving_transverse_dist(c, 2.0; method = m) == d
-    @test luminosity_dist(c, 2.0; method = m) == 3d
-    @test angular_diameter_dist(c, 2.0; method = m) == d / 3
+    d = comoving_radial_distance(c, 2.0; method = m)
+    @test d != comoving_radial_distance(c, 2.0)
+    @test comoving_transverse_distance(c, 2.0; method = m) == d
+    @test luminosity_distance(c, 2.0; method = m) == 3d
+    @test angular_diameter_distance(c, 2.0; method = m) == d / 3
     @test comoving_volume(c, 2.0; method = m) == 4π / 3 * d^3
     @test distmod(c, 2.0; method = m) == 5 * log10(3d) + 25
     @test comoving_volume_element(c, 2.0; method = m) ==
-        hubble_dist0(c) * d^2 / E(c, 2.0)
+        hubble_distance(c) * d^2 / E(c, 2.0)
     # `age`'s integrand is a removable 0·∞ at √a = 0, so it needs an open rule.
     r = GaussLegendreRule(3)
     @test lookback_time(c, 1.5; method = r) == age(c, 0; method = r) - age(c, 1.5; method = r)
@@ -86,7 +86,7 @@ end
     build(θ) = FlatW0WaCDM(θ[1], θ[2], θ[3], θ[4])
     θ0 = [67.0, 0.315, -0.9, 0.2]
     quantities = (
-        (θ, method) -> comoving_radial_dist(build(θ), 1.3; method),
+        (θ, method) -> comoving_radial_distance(build(θ), 1.3; method),
         (θ, method) -> age(build(θ), 0.5; method),
     )
     methods = (GaussLegendreRule(80), (QuadGKJL(), TIGHT), Integrals.GaussLegendre(; n = 60))
@@ -100,7 +100,7 @@ end
 
 @testset "default path does not allocate" begin
     c = COSMOLOGIES[3]
-    comoving_radial_dist(c, 1.3); age(c, 0.5)
-    @test (@allocated comoving_radial_dist(c, 1.3)) == 0
+    comoving_radial_distance(c, 1.3); age(c, 0.5)
+    @test (@allocated comoving_radial_distance(c, 1.3)) == 0
     @test (@allocated age(c, 0.5)) == 0
 end
