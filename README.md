@@ -41,7 +41,9 @@ grid = distance_and_volume_grid(c, z)
 ```
 
 `distance_and_volume_grid` returns the **all-sky** `dV_c/dz` (`4π × comoving_volume_element`,
-Mpc³ per unit redshift), which is what redshift-population codes such as
+Mpc³ per unit redshift). The caller must supply a nonempty, non-negative, strictly
+increasing grid; the package does not validate it. The all-sky convention is what
+redshift-population codes such as
 [GWDistributions.jl](https://github.com/binado/GWDistributions.jl) expect.
 
 For sampler hyperparameters, build from a `NamedTuple` (extra keys are ignored):
@@ -56,6 +58,7 @@ cosmology((H0 = 67.0, Ωm = 0.315, Ξ₀ = 1.2))   # FlatLCDM(67.0, 0.315)
 just install-runic   # once
 just fmt             # format with Runic
 just test            # Pkg.test() on Julia 1.12
+just test-reactant   # opt-in Reactant CPU tests (installs a separate environment)
 ```
 
 ## Choosing the quadrature method
@@ -85,3 +88,36 @@ The defaults are fixed rules (40 nodes for `d_c`, 64 for `age`, 4 per interval o
 that are accurate to ~1e-12. Adaptive algorithms from Integrals.jl use their own, looser
 default tolerances, so pass `reltol` if you need parity. Integrals.jl is an optional
 dependency; `Integrals.GaussLegendre` runs on the same kernel with no overhead.
+
+## Reactant compilation
+
+The built-in fixed Gauss–Legendre path supports [Reactant.jl](https://github.com/EnzymeAD/Reactant.jl)
+compilation with traced cosmology parameters, scalar redshift and redshift arrays. Reactant
+is optional and is not a package dependency.
+
+```julia
+using Reactant, BackgroundCosmology
+
+c = Reactant.to_rarray(cosmology(); track_numbers = true)
+z = Reactant.to_rarray(0.5; track_numbers = true)
+f = @compile luminosity_distance(c, z)
+f(c, z)
+
+# Validate the grid in the caller before transferring it to Reactant.
+z_grid = Reactant.to_rarray(collect(range(0.0, 2.0; length = 101)))
+g = @compile distance_and_volume_grid(c, z_grid)
+g(c, z_grid)
+```
+
+Use `track_numbers = true` to make scalar inputs, including fields inside a cosmology,
+vary at runtime. Plain Julia scalars become compile-time constants. Compiled functions
+can be reused with inputs of matching types and shapes; prefer Reactant arrays for large
+grids so interval integration and the cumulative sum compile as array operations.
+Prefix sums may reassociate additions, so grid results agree to floating-point rounding
+rather than bit for bit.
+
+Verified with Julia 1.12.7 and Reactant 0.2.294 on CPU with Float64 calculations.
+The opt-in test suite covers all three models,
+`E`, `hubble_parameter`, the distance and volume functions, `age`, `lookback_time` and
+`distance_and_volume_grid`. Adaptive/custom integration methods and `hubble_constant_si`
+(which explicitly converts to a host `Float64`) are outside this tracing guarantee.

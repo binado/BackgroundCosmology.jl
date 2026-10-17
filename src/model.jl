@@ -11,7 +11,7 @@ abstract type AbstractCosmology end
 
 Flat ΛCDM cosmology (`w = -1`, radiation-free).
 """
-struct FlatLCDM{TH0 <: Real, TΩm <: Real} <: AbstractCosmology
+struct FlatLCDM{TH0 <: Number, TΩm <: Number} <: AbstractCosmology
     H0::TH0
     Ωm::TΩm
 end
@@ -21,7 +21,7 @@ end
 
 Flat wCDM cosmology with constant dark-energy equation of state `w0`.
 """
-struct FlatWCDM{TH0 <: Real, TΩm <: Real, Tw0 <: Real} <: AbstractCosmology
+struct FlatWCDM{TH0 <: Number, TΩm <: Number, Tw0 <: Number} <: AbstractCosmology
     H0::TH0
     Ωm::TΩm
     w0::Tw0
@@ -32,19 +32,19 @@ end
 
 Flat w0waCDM (CPL) cosmology: `w(z) = w0 + wa·z/(1+z)`.
 """
-struct FlatW0WaCDM{TH0 <: Real, TΩm <: Real, Tw0 <: Real, Twa <: Real} <: AbstractCosmology
+struct FlatW0WaCDM{TH0 <: Number, TΩm <: Number, Tw0 <: Number, Twa <: Number} <: AbstractCosmology
     H0::TH0
     Ωm::TΩm
     w0::Tw0
     wa::Twa
 end
 
-"""    H0(c) -> Real
+"""    H0(c) -> Number
 
 Present-day Hubble parameter in km/s/Mpc."""
 H0(c::AbstractCosmology) = c.H0
 
-"""    Ωm(c) -> Real
+"""    Ωm(c) -> Number
 
 Present-day matter density parameter."""
 Ωm(c::AbstractCosmology) = c.Ωm
@@ -70,9 +70,9 @@ function cosmology(; H0 = 67.66, Ωm = 0.30966, w0 = nothing, wa = nothing)
 end
 
 _cosmology(H0, Ωm, ::Nothing, ::Nothing) = FlatLCDM(H0, Ωm)
-_cosmology(H0, Ωm, w0::Real, ::Nothing) = FlatWCDM(H0, Ωm, w0)
-_cosmology(H0, Ωm, w0::Real, wa::Real) = FlatW0WaCDM(H0, Ωm, w0, wa)
-function _cosmology(H0, Ωm, ::Nothing, ::Real)
+_cosmology(H0, Ωm, w0::Number, ::Nothing) = FlatWCDM(H0, Ωm, w0)
+_cosmology(H0, Ωm, w0::Number, wa::Number) = FlatW0WaCDM(H0, Ωm, w0, wa)
+function _cosmology(H0, Ωm, ::Nothing, ::Number)
     throw(ArgumentError("`wa` requires `w0` to be given"))
 end
 
@@ -92,7 +92,7 @@ function (::Type{C})(h::NamedTuple) where {C <: AbstractCosmology}
 end
 
 """
-    w(c::AbstractCosmology, z) -> Real
+    w(c::AbstractCosmology, z) -> Number
 
 Dark-energy equation of state `w(z)`.
 """
@@ -108,17 +108,17 @@ function _de_density_ratio(c::FlatW0WaCDM, z)
 end
 
 """
-    E(c::AbstractCosmology, z) -> Real
+    E(c::AbstractCosmology, z) -> Number
 
 Dimensionless Hubble parameter `E(z) = H(z) / H₀`.
 """
-function E(c::AbstractCosmology, z::Real)
+function E(c::AbstractCosmology, z::Number)
     return sqrt(Ωm(c) * (1 + z)^3 + (1 - Ωm(c)) * _de_density_ratio(c, z))
 end
 
 """
-    hubble_parameter(c::AbstractCosmology, z) -> Real
+    hubble_parameter(c::AbstractCosmology, z) -> Number
 
 Hubble parameter `H(z)` in km/s/Mpc.
 """
-hubble_parameter(c::AbstractCosmology, z::Real) = H0(c) * E(c, z)
+hubble_parameter(c::AbstractCosmology, z::Number) = H0(c) * E(c, z)

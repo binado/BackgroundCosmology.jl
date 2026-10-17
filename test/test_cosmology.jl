@@ -178,17 +178,18 @@ end
     end
 
     # astrogwb's contract: the grid need not start at zero — 0 is prepended
-    # internally. A shifted grid is bit-identical, at the shared nodes, to the
+    # internally. A shifted grid agrees to rounding error, at the shared nodes, with the
     # zero-prepended grid: the leading zero-width interval contributes exactly 0
-    # and every following interval is the same affine map.
+    # and every following interval is the same affine map. Prefix scans may
+    # reassociate additions, so they need not be bit-identical.
     c = FlatLCDM(67.0, 0.315)
     z_shift = collect(LinRange(0.5, 20.0, 128))
     g_shift = distance_and_volume_grid(c, z_shift)
     g_prepended = distance_and_volume_grid(c, [0.0; z_shift])
-    @test g_shift.comoving_distance == g_prepended.comoving_distance[2:end]
-    @test g_shift.luminosity_distance == g_prepended.luminosity_distance[2:end]
-    @test g_shift.differential_comoving_volume ==
-        g_prepended.differential_comoving_volume[2:end]
+    @test g_shift.comoving_distance ≈ g_prepended.comoving_distance[2:end] rtol = 1.0e-12
+    @test g_shift.luminosity_distance ≈ g_prepended.luminosity_distance[2:end] rtol = 1.0e-12
+    @test g_shift.differential_comoving_volume ≈
+        g_prepended.differential_comoving_volume[2:end] rtol = 1.0e-12
     # A shifted grid at production density is also accurate, except for its first
     # interval [0, 0.5], which is ~25x wider than the rest and dominates the
     # composite-rule error (~1e-9 there). (The 128-point grid above is deliberately
@@ -231,8 +232,13 @@ end
         @test d ≈ (f_scalar(x0 + h) - f_scalar(x0 - h)) / (2h) rtol = 1.0e-5
     end
 
-    @test_throws ArgumentError distance_and_volume_grid(c, Float64[])
-    @test_throws ArgumentError distance_and_volume_grid(c, [0.0, 1.0, 0.5])
-    @test_throws ArgumentError distance_and_volume_grid(c, [0.0, 1.0, 1.0])
-    @test_throws ArgumentError distance_and_volume_grid(c, [-1.0e-3, 1.0])
+    g_zero = distance_and_volume_grid(c, [0.0])
+    @test all(iszero, only.(values(g_zero)))
+end
+
+@testset "redshift derivatives at zero" begin
+    for c in (FlatLCDM(67.0, 0.315), FlatWCDM(67.0, 0.315, -0.9), FlatW0WaCDM(67.0, 0.315, -0.9, 0.2))
+        @test ForwardDiff.derivative(z -> comoving_radial_distance(c, z), 0.0) ≈ hubble_distance(c)
+        @test ForwardDiff.derivative(z -> luminosity_distance(c, z), 0.0) ≈ hubble_distance(c)
+    end
 end

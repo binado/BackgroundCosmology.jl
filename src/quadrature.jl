@@ -6,7 +6,7 @@ Fixed `n`-node Gauss–Legendre rule, with `nodes` and `weights` on the referenc
 `[-1, 1]`. This is the default `method` of every integral in the package; pass a different
 order as `method = GaussLegendreRule(80)`.
 """
-struct GaussLegendreRule{V <: AbstractVector{<:Real}}
+struct GaussLegendreRule{V <: AbstractVector{<:Number}}
     nodes::V
     weights::V
 end
@@ -43,7 +43,7 @@ function integrate(f, lo, hi, method)
     )
 end
 
-function integrate(f, lo::Real, hi::Real, rule::GaussLegendreRule)
+function integrate(f, lo::Number, hi::Number, rule::GaussLegendreRule)
     half = (hi - lo) / 2
     mid = (lo + hi) / 2
     acc = zero(half * f(mid))

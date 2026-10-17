@@ -1,0 +1,11 @@
+[deps]
+BackgroundCosmology = "2d447719-857e-46c1-9a42-11db63d1a3c6"
+Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+BackgroundCosmology = {path = "../.."}
+
+[compat]
+Reactant = "0.2.294"
+julia = "1.12"

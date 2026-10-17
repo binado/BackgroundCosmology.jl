@@ -76,6 +76,11 @@ end
     @test distmod(c, 2.0; method = m) == 5 * log10(3d) + 25
     @test comoving_volume_element(c, 2.0; method = m) ==
         hubble_distance(c) * d^2 / E(c, 2.0)
+    z = [0.2, 1.0, 2.0]
+    grid = distance_and_volume_grid(c, z; method = m)
+    @test grid.comoving_distance[1] == comoving_radial_distance(c, first(z); method = m)
+    @test grid.comoving_distance != distance_and_volume_grid(c, z).comoving_distance
+    @test grid.luminosity_distance == (1 .+ z) .* grid.comoving_distance
     # `age`'s integrand is a removable 0·∞ at √a = 0, so it needs an open rule.
     r = GaussLegendreRule(3)
     @test lookback_time(c, 1.5; method = r) == age(c, 0; method = r) - age(c, 1.5; method = r)

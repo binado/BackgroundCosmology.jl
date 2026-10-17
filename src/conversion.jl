@@ -19,4 +19,4 @@ end
 
 # 1 / H0 in Gyr for H0 in km/s/Mpc.
 # Deliberately no `Float64` conversion, so ForwardDiff duals in `H0` propagate.
-_hubble_time_gyr(H0_km_s_mpc::Real) = METERS_PER_MPC / (1000 * H0_km_s_mpc) / SECONDS_PER_GYR
+_hubble_time_gyr(H0_km_s_mpc::Number) = METERS_PER_MPC / (1000 * H0_km_s_mpc) / SECONDS_PER_GYR
